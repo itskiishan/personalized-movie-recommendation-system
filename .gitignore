@@ -1,0 +1,15 @@
+myvirtualenv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+model/*.pkl
+!model/deployment/
+!model/deployment/*.pkl
+
+movies.dat
+ratings.dat
+users.dat
+
+old_content_based_experiment.ipynb
+app_backup.py
