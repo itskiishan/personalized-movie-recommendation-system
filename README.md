@@ -5,7 +5,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen?logo=python)](https://www.python.org/)
 [![Scikit-Learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 
-An end-to-end, machine learning-driven movie recommendation engine developed using **User-Based Collaborative Filtering (UBCF)** and **Cosine Similarity** on the **MovieLens 1M** dataset. The system analyzes user rating behavior to discover like-minded viewing patterns, computes weighted preference scores, and serves real-time, personalized Top-$N$ movie recommendations through an interactive **Streamlit** web application.
+An end-to-end, machine learning-driven movie recommendation engine developed using **User-Based Collaborative Filtering (UBCF)** and **Cosine Similarity** on the **MovieLens 1M** dataset. The system analyzes user rating behavior to discover like-minded viewing patterns, computes weighted preference scores, and serves real-time, personalized Top-N movie recommendations through an interactive **Streamlit** web application.
 
 ---
 
@@ -39,6 +39,7 @@ This project was developed by **Kishan Kumar** as part of the **HCL** training p
 
 ## 📖 Table of Contents
 
+- [HCL Training Acknowledgement](#-hcl-training-acknowledgement)
 - [Project Overview](#-project-overview)
 - [Key Features](#-key-features)
 - [System Architecture & Workflow](#-system-architecture--workflow)
@@ -71,9 +72,9 @@ This project delivers an automated, data-driven solution:
 
 ## ✨ Key Features
 
-- **Personalized Top-$N$ Recommendations:** Generates ordered movie rankings uniquely customized to any target user ID in the dataset.
+- **Personalized Top-N Recommendations:** Generates ordered movie rankings uniquely customized to any target user ID in the dataset.
 - **Novelty Filtering (Seen-Item Masking):** Automatically filters out movies the target user has already evaluated, guaranteeing that every suggestion represents an unviewed discovery.
-- **Tunable Neighborhood Parameters:** Interactive sidebar controls allow users to adjust the number of recommendations ($N \in [5, 20]$) and the pool of similar users ($K \in [5, 50]$).
+- **Tunable Neighborhood Parameters:** Interactive sidebar controls allow users to adjust the number of recommendations (5 to 20) and the pool of similar users (5 to 50).
 - **High-Performance Sparse Representations:** Implements `scipy.sparse.csr_matrix` for compact, in-memory representation, compressing the 6,040 × 3,706 rating matrix to just ~12 MB while avoiding memory bottlenecks.
 - **Empirically Validated Methodology:** Rigorously benchmarked using a 20% holdout test of positive user ratings ($\text{Rating} \ge 4$) evaluated across 100 users for Precision@10, Recall@10, and Catalog Coverage.
 - **Clean Responsive Dashboard:** Built with Streamlit, providing clean tabular views of movie titles, associated genres, and computed recommendation confidence scores.
@@ -120,14 +121,18 @@ flowchart TD
 
 The recommendation pipeline executes the following deterministic steps:
 
-1. **User Profile Retrieval:** Given target user $u$, the application extracts their rating vector $\mathbf{r}_u$ from the sparse interaction matrix.
-2. **Cohort Partitioning:** The user's precomputed cluster assignment (generated via K-Means during preprocessing) scopes candidate users into a relevant taste cohort, speeding up vector dot products.
-3. **Similarity Assessment:** Cosine similarity is computed between $\mathbf{r}_u$ and all other user vectors $\mathbf{r}_v$ in the cohort.
-4. **Neighbor Selection:** The top $K$ users with highest positive similarity scores are identified as neighbors $\mathcal{N}_K(u)$.
-5. **Weighted Rating Aggregation:** Candidate movie scores are derived by calculating the dot product between neighbor similarity weights and neighbor rating vectors:
-   $$\mathbf{s} = \mathbf{w}_{\text{sim}} \cdot \mathbf{R}_{\text{neighbors}}$$
-6. **Masking Previously Rated Movies:** Any movie $i$ where $r_{u, i} > 0$ has its score set to $-1$, ensuring existing watches are never recommended.
-7. **Ranking & Metadata Enrichment:** Indices corresponding to the top $N$ scoring movies are matched against movie metadata to retrieve clean titles and genre tags.
+1. **User Profile Retrieval:** Given a target user $u$, the application extracts their rating vector from the sparse interaction matrix.
+2. **Cohort Partitioning:** The user's precomputed cluster assignment (generated via K-Means during preprocessing) scopes candidate users into a relevant taste cohort for efficient comparison.
+3. **Similarity Assessment:** Cosine similarity is computed between the target user vector and candidate user vectors in the cohort.
+4. **Neighbor Selection:** The top $K$ users with highest positive similarity scores are selected as nearest neighbors.
+5. **Weighted Rating Aggregation:** Candidate movie scores are computed by taking the dot product of neighbor similarity weights and neighbor rating vectors:
+
+$$
+\mathbf{s} = \mathbf{w}_{\text{sim}} \cdot \mathbf{R}_{\text{neighbors}}
+$$
+
+6. **Masking Previously Rated Movies:** Any movie already rated by the target user has its score set to $-1$, ensuring existing watches are never recommended.
+7. **Ranking & Metadata Enrichment:** Indices corresponding to the top $N$ scoring movies are sorted in descending order and matched against movie metadata to return ranked titles and genre tags.
 
 ---
 
@@ -170,22 +175,50 @@ During development and experimental benchmarking, two architectural strategies w
 ## 📐 Cosine Similarity Formulation
 
 ### 1. Vector Space Representation
-Let $\mathcal{U} = \{u_1, u_2, \dots, u_m\}$ be the set of users and $\mathcal{I} = \{i_1, i_2, \dots, i_n\}$ be the set of movies. Each user $u$ is represented by a sparse vector $\mathbf{r}_u \in \mathbb{R}^n$, where $r_{u, i}$ represents the rating assigned by user $u$ to movie $i$ (or $0$ if unrated).
+
+Let the dataset define a set of $m$ users $\mathcal{U}$ and a set of $n$ movies $\mathcal{I}$:
+
+$$
+\mathcal{U} = \{u_1, u_2, \dots, u_m\}, \quad \mathcal{I} = \{i_1, i_2, \dots, i_n\}
+$$
+
+Each user $u$ is represented by an $n$-dimensional sparse rating vector:
+
+$$
+\mathbf{r}_u = [r_{u, 1}, r_{u, 2}, \dots, r_{u, n}] \in \mathbb{R}^n
+$$
+
+where each entry $r_{u, i}$ represents the rating assigned by user $u$ to movie $i$ (with $0$ indicating an unrated movie):
+
+$$
+r_{u, i} \in \{1, 2, 3, 4, 5\} \quad (\text{or } 0 \text{ if unrated})
+$$
 
 ### 2. Cosine Similarity Equation
+
 The similarity between target user $u$ and neighbor user $v$ is measured as the cosine of the angle between their rating vectors:
 
-$$\text{Cosine Similarity}(u, v) = \cos(\theta) = \frac{\mathbf{r}_u \cdot \mathbf{r}_v}{\|\mathbf{r}_u\|_2 \|\mathbf{r}_v\|_2} = \frac{\sum_{i=1}^{n} r_{u,i} \cdot r_{v,i}}{\sqrt{\sum_{i=1}^{n} r_{u,i}^2} \cdot \sqrt{\sum_{i=1}^{n} r_{v,i}^2}}$$
+$$
+\text{Cosine Similarity}(u, v) = \cos(\theta) = \frac{\mathbf{r}_u \cdot \mathbf{r}_v}{\|\mathbf{r}_u\|_2 \|\mathbf{r}_v\|_2} = \frac{\sum_{i=1}^{n} r_{u,i} \cdot r_{v,i}}{\sqrt{\sum_{i=1}^{n} r_{u,i}^2} \cdot \sqrt{\sum_{i=1}^{n} r_{v,i}^2}}
+$$
 
 Where:
-- $\mathbf{r}_u \cdot \mathbf{r}_v$ is the dot product of ratings between users $u$ and $v$.
-- $\|\mathbf{r}_u\|_2$ and $\|\mathbf{r}_v\|_2$ are the Euclidean $L_2$ norms of the respective rating vectors.
-- Similarity values range between $0$ (orthogonal, completely disjoint preferences) and $1$ (identical relative ratings).
+- The numerator represents the vector dot product of ratings between users $u$ and $v$.
+- The denominator represents the product of their Euclidean ($L_2$) vector norms:
+
+$$
+\mathbf{r}_u \cdot \mathbf{r}_v = \sum_{i=1}^{n} r_{u, i} \cdot r_{v, i}, \quad \|\mathbf{r}_u\|_2 = \sqrt{\sum_{i=1}^{n} r_{u, i}^2}
+$$
+
+- Similarity values range between $0$ (orthogonal preferences) and $1$ (identical relative rating patterns).
 
 ### 3. Prediction Score Computation
-The predicted interest score $\hat{r}_{u, i}$ for target user $u$ on an unrated movie $i$ is computed as the weighted sum of ratings across the top-$K$ most similar users $\mathcal{N}_K(u)$:
 
-$$\hat{r}_{u, i} = \sum_{v \in \mathcal{N}_K(u)} \text{sim}(u, v) \cdot r_{v, i}$$
+The predicted interest score for target user $u$ on an unrated movie $i$ is computed as the similarity-weighted sum of ratings from the top-$K$ most similar users:
+
+$$
+\hat{r}_{u, i} = \sum_{v \in \mathcal{N}_K(u)} \text{sim}(u, v) \cdot r_{v, i}
+$$
 
 ---
 
@@ -222,21 +255,30 @@ The project uses the benchmark **MovieLens 1M** dataset provided by **GroupLens 
 
 ### Evaluation Methodology
 The evaluation follows a standard offline hold-out testing protocol designed in `model_evaluation.ipynb`:
-1. **Sample Cohort:** $100$ representative users were randomly selected.
-2. **Positive Preference Threshold:** Positive ratings were defined as $\text{Rating} \ge 4$ (indicating true user appreciation).
-3. **Hold-Out Split:** For each evaluation user, $20\%$ of their positive ratings were masked from the training matrix and sequestered into a ground-truth test set $\mathcal{T}_u$.
-4. **Top-$K$ Inference:** The recommendation engine produced its Top-10 suggestions $\mathcal{R}_u$ for each evaluation user without knowledge of held-out ratings.
+1. **Sample Cohort:** 100 representative users were randomly selected.
+2. **Positive Preference Threshold:** Positive ratings were defined as ratings of 4 or 5 ($\text{Rating} \ge 4$), representing true positive preferences.
+3. **Hold-Out Split:** For each evaluation user, 20% of their positive ratings were masked from the training matrix and sequestered into a ground-truth test set $\mathcal{T}_u$.
+4. **Top-10 Inference:** The recommendation engine produced its Top-10 suggestions $\mathcal{R}_u$ for each evaluation user without access to held-out ratings.
 
 ### Formal Metric Definitions
 
-- **Precision@10:** Measures recommendation precision — the proportion of top-10 recommended movies that the user genuinely rated positively in the hidden test set:
-  $$\text{Precision@10} = \frac{1}{|\mathcal{U}_{\text{eval}}|} \sum_{u \in \mathcal{U}_{\text{eval}}} \frac{|\mathcal{R}_u \cap \mathcal{T}_u|}{10}$$
+- **Precision@10:** Measures recommendation precision — the proportion of top-10 recommended movies that the user genuinely rated positively ($\text{Rating} \ge 4$) in the hidden test set:
+
+$$
+\text{Precision@10} = \frac{1}{|\mathcal{U}_{\text{eval}}|} \sum_{u \in \mathcal{U}_{\text{eval}}} \frac{|\mathcal{R}_u \cap \mathcal{T}_u|}{10}
+$$
 
 - **Recall@10:** Measures coverage of relevant items — the proportion of the user's hidden positive test items that the algorithm successfully recovered:
-  $$\text{Recall@10} = \frac{1}{|\mathcal{U}_{\text{eval}}|} \sum_{u \in \mathcal{U}_{\text{eval}}} \frac{|\mathcal{R}_u \cap \mathcal{T}_u|}{|\mathcal{T}_u|}$$
+
+$$
+\text{Recall@10} = \frac{1}{|\mathcal{U}_{\text{eval}}|} \sum_{u \in \mathcal{U}_{\text{eval}}} \frac{|\mathcal{R}_u \cap \mathcal{T}_u|}{|\mathcal{T}_u|}
+$$
 
 - **Catalog Coverage:** Measures the diversity and breadth of the catalog explored by recommendations:
-  $$\text{Catalog Coverage} = \frac{|\bigcup_{u \in \mathcal{U}_{\text{eval}}} \mathcal{R}_u|}{M_{\text{train}}} \times 100\%$$
+
+$$
+\text{Catalog Coverage} = \frac{|\bigcup_{u \in \mathcal{U}_{\text{eval}}} \mathcal{R}_u|}{M_{\text{train}}} \times 100\%
+$$
 
 ### Empirical Evaluation Results
 
