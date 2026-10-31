@@ -4,7 +4,6 @@
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/itskiishan/personalized-movie-recommendation-system)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen?logo=python)](https://www.python.org/)
 [![Scikit-Learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An end-to-end, machine learning-driven movie recommendation engine developed using **User-Based Collaborative Filtering (UBCF)** and **Cosine Similarity** on the **MovieLens 1M** dataset. The system analyzes user rating behavior to discover like-minded viewing patterns, computes weighted preference scores, and serves real-time, personalized Top-$N$ movie recommendations through an interactive **Streamlit** web application.
 
@@ -19,6 +18,22 @@ An end-to-end, machine learning-driven movie recommendation engine developed usi
   <img src="assets/streamlit_app.png" alt="Personalized Movie Recommendation System Web Application" width="900" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
   <p><em>Figure 1: Streamlit interactive interface showing personalized movie recommendations generated for User 1.</em></p>
 </div>
+
+---
+
+## 🎓 HCL Training Acknowledgement
+
+This project was developed by **Kishan Kumar** as part of the **HCL** training program conducted from **28 September 2026 to 1 October 2026**, under the mentorship and technical guidance of **Mr. Himesh Singh** (Technical Trainer).
+
+| Attribute | Details |
+| :--- | :--- |
+| **Training Organization** | HCL |
+| **Project Title** | Personalized Movie Recommendation System Using Collaborative Filtering |
+| **Training Period** | 28 September 2026 – 1 October 2026 |
+| **Project Mentor** | Himesh Singh (Technical Trainer) |
+| **Project Author** | Kishan Kumar |
+
+> **Acknowledgement:** Sincere thanks to **HCL** for organizing the training program and providing this practical learning opportunity. Special gratitude is extended to **Mr. Himesh Singh** for his valuable guidance, technical insights, and supportive review throughout the development of this recommendation system project.
 
 ---
 
@@ -38,7 +53,7 @@ An end-to-end, machine learning-driven movie recommendation engine developed usi
 - [Running the Streamlit Application](#-running-the-streamlit-application)
 - [Future Improvements](#-future-improvements)
 - [Author & Mentorship](#-author--mentorship)
-- [Dataset Attribution & License](#-dataset-attribution--license)
+- [Dataset Attribution & License Information](#-dataset-attribution--license-information)
 
 ---
 
@@ -50,7 +65,7 @@ This project delivers an automated, data-driven solution:
 1. **User-Centric Profiling:** Encodes user rating histories into high-dimensional preference vectors.
 2. **Behavioral Similarity Discovery:** Uses Cosine Similarity to identify neighborhood clusters of users with similar film evaluations.
 3. **Collaborative Recommendation Scoring:** Predicts user preference for unrated movies by aggregating ratings weighted by peer similarity.
-4. **Interactive Deployment:** Implements a lightweight, sparse matrix-backed Streamlit application capable of delivering sub-second recommendations across 6,040 users and 3,883 movies.
+4. **Interactive Deployment:** Implements a lightweight, sparse matrix-backed Streamlit application providing responsive, interactive recommendations across 6,040 users and 3,883 movies.
 
 ---
 
@@ -85,7 +100,7 @@ flowchart TD
     C --> D["Extract Cohort Sub-Matrix (Scikit-Learn / SciPy)"]
     D --> E["Calculate Cosine Similarity between Target & Cohort Users"]
     E --> F["Select Top-K Most Similar Neighbors"]
-    F --> G["Compute Weighted Recommendation Scores: S = Sim · R"]
+    F --> G["Compute Weighted Recommendation Scores: s = w_sim * R"]
     G --> H["Mask Movies Already Rated by Target User (Score = -1)"]
     H --> I["Sort Unrated Movies in Descending Score Order"]
     I --> J["Map Top-N MovieIDs to Metadata (Titles & Genres)"]
@@ -148,7 +163,7 @@ During development and experimental benchmarking, two architectural strategies w
                    └───────────────────────────────────────────────────┘
 ```
 
-> **Evaluation Insight:** As documented in `model_evaluation.ipynb`, the pure User-Based Collaborative Filtering model achieved superior Precision@10 (**0.3050**) and Recall@10 (**0.2395**) over the K-Means clustered variation (**0.2990** and **0.2352**). Consequently, **User-Based Collaborative Filtering is established as the final primary recommendation methodology**, while cluster assignments are leveraged in deployment to optimize response latency.
+> **Evaluation Insight:** As documented in `model_evaluation.ipynb`, the pure User-Based Collaborative Filtering model achieved superior Precision@10 (**0.3050**) and Recall@10 (**0.2395**) over the K-Means clustered variation (**0.2990** and **0.2352**). Consequently, **User-Based Collaborative Filtering is established as the final primary recommendation methodology**, while cluster assignments are used in deployment to narrow candidate users for efficient computation.
 
 ---
 
@@ -223,7 +238,15 @@ The evaluation follows a standard offline hold-out testing protocol designed in 
 - **Catalog Coverage:** Measures the diversity and breadth of the catalog explored by recommendations:
   $$\text{Catalog Coverage} = \frac{|\bigcup_{u \in \mathcal{U}_{\text{eval}}} \mathcal{R}_u|}{M_{\text{train}}} \times 100\%$$
 
-### Empirical Results
+### Empirical Evaluation Results
+
+| Metric | Baseline Collaborative Filtering |
+| :--- | :---: |
+| **Precision@10** | 0.3050 |
+| **Recall@10** | 0.2395 |
+| **Catalog Coverage** | 8.45% |
+
+### Comparative Model Summary
 
 | Model Architecture | Precision@10 | Recall@10 | Catalog Coverage |
 | :--- | :---: | :---: | :---: |
@@ -279,7 +302,7 @@ personalized-movie-recommendation-system/
 
 ### Deployment Artifact Details
 
-The production application in `app.py` loads lightweight serialized objects directly from `model/deployment/` to ensure lightning-fast startup and execution without needing raw dataset parsing:
+The production application in `app.py` loads lightweight serialized objects directly from `model/deployment/` to ensure efficient startup and execution without needing raw dataset parsing:
 - `sparse_feature_matrix.pkl`: 6,040 × 3,706 `scipy.sparse.csr_matrix` containing non-zero ratings.
 - `user_ids.pkl`: Index-to-UserID lookup array.
 - `movie_ids.pkl`: Index-to-MovieID lookup array.
@@ -362,13 +385,13 @@ Upon launching, Streamlit will display local and network access URLs:
   - **GitHub:** [@itskiishan](https://github.com/itskiishan)
 
 - **Project Mentor:** **Mr. Himesh Singh**
-  - **Designation:** Technical Trainer & Data Industry Expert
+  - **Designation:** Technical Trainer
 
 ---
 
-## 📜 Dataset Attribution & License
+## 📜 Dataset Attribution & License Information
 
-- **Dataset:** GroupLens MovieLens 1M Dataset.
-- **Attribution:** F. Maxwell Harper and Joseph A. Konstan. 2015. *The MovieLens Datasets: History and Context.* ACM Transactions on Interactive Intelligent Systems (TiiS) 5, 4, Article 19 (December 2015). GroupLens Research, University of Minnesota.
-- **Dataset Source:** [grouplens.org/datasets/movielens/1m](https://grouplens.org/datasets/movielens/1m/)
-- **License:** The source code of this project is licensed under the [MIT License](LICENSE). The MovieLens 1M dataset is provided for academic, research, and non-commercial educational purposes.
+- **Dataset Source:** GroupLens Research, University of Minnesota ([grouplens.org/datasets/movielens/1m](https://grouplens.org/datasets/movielens/1m/))
+- **Dataset Citation:** F. Maxwell Harper and Joseph A. Konstan. 2015. *The MovieLens Datasets: History and Context.* ACM Transactions on Interactive Intelligent Systems (TiiS) 5, 4, Article 19 (December 2015).
+- **Dataset Terms:** The MovieLens 1M dataset is provided for academic, research, and non-commercial educational purposes.
+- **Repository License:** No license has been specified for this repository.
